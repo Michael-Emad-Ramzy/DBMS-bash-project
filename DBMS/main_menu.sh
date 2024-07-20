@@ -33,11 +33,11 @@ create_database() {
         mkdir -p "$Database_Dir/$db_name"
         echo "Database '$db_name' created successfully."
     fi
-}
+} #here this function is for creating the db , it asks the user to enter the db name then it goes for checking if it exist if the db exist it shows a msg with already existed if not then it creates it 
 
 list_databases() {
     echo "Databases:"
     ls "$Database_Dir"
-}
+} #simple is it just list all the databases that exist in the directory 
 
 main_menu  # Call the main menu function to start the script
