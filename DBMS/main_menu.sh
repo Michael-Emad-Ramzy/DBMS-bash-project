@@ -40,4 +40,61 @@ list_databases() {
     ls "$Database_Dir"
 } #simple is it just list all the databases that exist in the directory 
 
+
+
+
+# Function to connect to a database with validation
+function connect_database() {
+    read -p "Enter database name: " dbname
+    if [ -d "./$Database_Dir/$dbname" ]; then
+        cd ./$Database_Dir/$dbname
+        database_menu
+        cd ..
+    else
+        echo "Database does not exist!"
+    fi
+}
+
+
+# Function to drop a database with validation
+function drop_database() {
+    read -p "Enter database name: " dbname
+    if [ -d "./$Database_Dir/$dbname" ]; then
+        rm -r ./$Database_Dir/$dbname
+        echo "Database $dbname dropped successfully!"
+    else
+        echo "Database does not exist!"
+    fi
+}
+
+
+
+# Function to display the database menu
+function database_menu() {
+    while true; do
+        echo "Database Menu:"
+        echo "1. Create Table"
+        echo "2. List Tables"
+        echo "3. Drop Table"
+        echo "4. Insert into Table"
+        echo "5. Select From Table"
+        echo "6. Delete From Table"
+        echo "7. Update Table"
+        echo "8. Back to Main Menu"
+        read -p "Choose an option: " option
+        case $option in
+            1) create_table ;;
+            2) list_tables ;;
+            3) drop_table ;;
+            4) insert_into_table ;;
+            5) select_from_table ;;
+            6) delete_from_table ;;
+            7) update_table ;;
+            8) break ;;
+            *) echo "Invalid option!" ;;
+        esac
+    done
+}
+
+
 main_menu  # Call the main menu function to start the script
