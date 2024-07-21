@@ -148,8 +148,8 @@ function database_menu() {
         read -p "Choose an option: " option
         case $option in
             1) createTable ;;
-            2) list_tables ;;
-            3) drop_table ;;
+            2) listTables ;;
+            3) dropTable ;;
             4) insert_into_table ;;
             5) select_from_table ;;
             6) delete_from_table ;;
