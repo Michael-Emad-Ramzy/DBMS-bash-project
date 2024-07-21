@@ -37,8 +37,14 @@ create_database() {
 
 list_databases() {
     echo "Databases:"
-    ls "$Database_Dir"
-} #simple is it just list all the databases that exist in the directory 
+    if [ "$(ls -A $Database_Dir)" ]; then
+        ls "$Database_Dir"
+    else
+        echo "There are no existing databases."
+        echo "Click 1 from the main menu to create a Database."
+    fi
+    } 
+    #simple is it just list all the databases that exist in the directory 
 
 
 
