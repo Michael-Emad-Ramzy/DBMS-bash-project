@@ -90,6 +90,42 @@ createTable(){
 
 }  #this is as the same as creating the db but it is just a table i enter the table name then it goes and check if it exist or not if not then it creates it 
 
+listTables() {
+    echo "Tables:"
+    if [ "$(ls -A)" ]; then
+        ls
+    else
+        echo "There are no existing tables."
+        echo "Choose option 1 from the database menu to create a Table."
+    fi
+} #this is for listing tables same as Dbs
+
+dropTable() {
+    read -p "Enter table name: " table_name
+    if [ -f "$table_name" ]; then
+        echo "Are you sure you want to delete the table '$table_name'?"
+        echo "For yes press 1"
+        echo "For no press 2"
+        read -p "Enter your choice: " confirm
+        case $confirm in
+            1)
+                rm "$table_name"
+                echo "Table '$table_name' dropped successfully!"
+                ;;
+            2)
+                echo "Table deletion cancelled."
+                ;;
+            *)
+                echo "Invalid choice, deletion cancelled."
+                ;;
+        esac
+    else
+        echo "Table '$table_name' does not exist!"
+    fi
+} #this is for dropping tables
+
+
+
 
 # Function to display the database menu
 function database_menu() {
