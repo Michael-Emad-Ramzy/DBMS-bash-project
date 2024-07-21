@@ -79,6 +79,18 @@ drop_database() {
 } #this function drops the choosen db by the user 
 
 
+createTable(){
+    read -p "Enter table name: " tableName
+        if [ -f "$tableName" ]; then
+            echo "Table '$tableName' already exists."
+        else
+            touch "$tableName"
+            echo "Table '$tableName' created successfully."
+        fi
+
+}  #this is as the same as creating the db but it is just a table i enter the table name then it goes and check if it exist or not if not then it creates it 
+
+
 # Function to display the database menu
 function database_menu() {
     while true; do
@@ -93,7 +105,7 @@ function database_menu() {
         echo "8. Back to Main Menu"
         read -p "Choose an option: " option
         case $option in
-            1) create_table ;;
+            1) createTable ;;
             2) list_tables ;;
             3) drop_table ;;
             4) insert_into_table ;;
