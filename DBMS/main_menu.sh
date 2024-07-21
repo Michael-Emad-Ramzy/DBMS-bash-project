@@ -42,31 +42,27 @@ list_databases() {
 
 
 
-
-# Function to connect to a database with validation
-function connect_database() {
+connect_database() {
     read -p "Enter database name: " dbname
-    if [ -d "./$Database_Dir/$dbname" ]; then
-        cd ./$Database_Dir/$dbname
+    if [ -d "$Database_Dir/$dbname" ]; then
+        cd "$Database_Dir/$dbname" || exit
         database_menu
-        cd ..
+        cd "$OLDPWD" || exit
     else
         echo "Database does not exist!"
     fi
-}
+} #this function connects to the database and show the db menu 
 
 
-# Function to drop a database with validation
-function drop_database() {
+drop_database() {
     read -p "Enter database name: " dbname
-    if [ -d "./$Database_Dir/$dbname" ]; then
-        rm -r ./$Database_Dir/$dbname
-        echo "Database $dbname dropped successfully!"
+    if [ -d "$Database_Dir/$dbname" ]; then
+        rm -r "$Database_Dir/$dbname"  
+        echo "Database '$dbname' dropped successfully!"
     else
-        echo "Database does not exist!"
+        echo "Database '$dbname' does not exist!"  
     fi
-}
-
+} #this function drops the choosen db by the user 
 
 
 # Function to display the database menu
