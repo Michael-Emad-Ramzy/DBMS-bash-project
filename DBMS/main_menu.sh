@@ -57,8 +57,22 @@ connect_database() {
 drop_database() {
     read -p "Enter database name: " dbname
     if [ -d "$Database_Dir/$dbname" ]; then
-        rm -r "$Database_Dir/$dbname"  
-        echo "Database '$dbname' dropped successfully!"
+        echo "Are you sure you want to delete the database '$dbname'?"
+        echo "For yes press 1"
+        echo "For no press 2"
+        read -p "Enter your choice: " confirm
+        case $confirm in
+            1) 
+                rm -r "$Database_Dir/$dbname"
+                echo "Database '$dbname' dropped successfully!"
+                ;;
+            2)
+                echo "Database deletion cancelled."
+                ;;
+            *)
+                echo "Invalid choice, deletion cancelled."
+                ;;
+        esac
     else
         echo "Database '$dbname' does not exist!"  
     fi
