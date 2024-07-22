@@ -6,8 +6,8 @@ Database_Dir="./DBMS"
 mkdir -p "$Database_Dir"
 
 main_menu() {
-    echo "#############################################"
-    echo -e "\n////Main Menu:////"
+    echo -e "\n#############################################"
+    echo -e "////Main Menu:////\n"
     echo "1. Create Database"
     echo "2. List Databases"
     echo "3. Connect To Database"
@@ -313,7 +313,7 @@ dropTable() {
 
 
 
-insert_into_table() {
+insertIntoTable() {
     local dbname="$1"
     echo -e "\nInsert Into Table\n"
     read -p "Please enter the name of the table: " table_name
@@ -414,8 +414,8 @@ insert_into_table() {
 # Function to display the database menu
 function database_menu() {
     while true; do
-        echo "#############################################"
-        echo -e "\nDatabase Menu:\n"
+        echo -e "\n #############################################"
+        echo -e "Database Menu:\n"
         echo "1. Create Table"
         echo "2. List Tables"
         echo "3. Drop Table"
@@ -429,7 +429,7 @@ function database_menu() {
             1) createTable ;;
             2) listTables ;;
             3) dropTable ;;
-            4) insert_into_table ;;
+            4) insertIntoTable ;;
             5) select_from_table ;;
             6) delete_from_table ;;
             7) update_table ;;
