@@ -27,13 +27,29 @@ main_menu() {
 
 create_database() {
     read -p "Enter database name: " db_name
+    db_name=$(echo "$db_name" | xargs) 
+
+        if [ -z "$db_name" ]; then
+        echo "Database name cannot be empty. Please enter a valid name."
+        create_database
+        return
+    fi
+
+
+        if [[ "$db_name" == *" "* ]]; then
+        echo "Database name cannot contain spaces. Please enter a valid name."
+        create_database
+        return
+    fi
+
     if [ -d "$Database_Dir/$db_name" ]; then
         echo "Database '$db_name' already exists."
     else
         mkdir -p "$Database_Dir/$db_name"
         echo "Database '$db_name' created successfully."
     fi
-} #here this function is for creating the db , it asks the user to enter the db name then it goes for checking if it exist if the db exist it shows a msg with already existed if not then it creates it 
+} #create DBs with Conditions like if i created with empty name , contain spaces and so on 
+
 
 list_databases() {
     echo "Databases:"
