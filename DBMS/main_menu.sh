@@ -105,30 +105,39 @@ drop_database() {
 
 createTable() {
     local dbname="$1"
-    echo -e "Create Table"
-    read -p "Please enter the Table Name: " table_name
+    echo -e "\nCreate Table\n"
+    read -p "Please enter the name of the table: " table_name
+
 
     table_name=$(echo "$table_name" | xargs)
 
+
     if [ -z "$table_name" ]; then
-        echo -e "Table name can't be empty"
+        echo -e "\nPlease enter a correct name\n"
         createTable "$dbname" 
+        
         return
     fi
+
 
     if [[ "$table_name" == *" "* ]]; then
-        echo -e "Table name cannot contain spaces"
+        echo -e "\nTable name cannot contain spaces\n"
         createTable "$dbname" 
+        
         return
     fi
 
+    # Check if the table already exists
     if [ -f "$table_name" ]; then
-        echo -e "Table '$table_name' already exists"
+        echo -e "\nTable '$table_name' already exists\n"
         createTable "$dbname" 
+        
         return
     fi
+
 
     read -p "Enter number of columns: " colnumber
+
 
     if ! [[ "$colnumber" =~ ^[1-9][0-9]*$ ]]; then
         echo "Invalid number of columns."
@@ -145,19 +154,23 @@ createTable() {
 
         colname=$(echo "$colname" | tr ' ' '_')
 
+
         if [[ "$colname" == *" "* ]]; then
             echo "Column name cannot contain spaces."
             ((index--))
             continue
         fi
 
+
         read -p "Column $colname datatype (string/int): " coltype
+
 
         if [[ "$coltype" != "string" && "$coltype" != "int" ]]; then
             echo "Invalid datatype. Please enter 'string' or 'int'."
             ((index--))
             continue
         fi
+
 
         if [ -z "$primary_key" ]; then
             read -p "Is $colname the primary key? (yes/no): " is_primary_key
@@ -169,6 +182,7 @@ createTable() {
         col_names+=("$colname")
         col_types+=("$coltype")
     done
+
 
     touch "$table_name"
     {
@@ -195,8 +209,9 @@ createTable() {
         printf "|\n"
     } > "$table_name"
     
+
     meta_file="$table_name.meta"
-    echo "Field|Type|Key" > "$meta_file"
+    echo "Field |Type |Key" > "$meta_file"
     
     for ((i = 0; i < ${#col_names[@]}; i++)); do
         col_name=${col_names[$i]}
@@ -210,7 +225,9 @@ createTable() {
 
     echo -e "\nTable '$table_name' created successfully with $colnumber columns."
 
-} #so this create the table with all the possible conditions and it brings up with two files one with the table and the other is metafile
+}
+
+#so this create the table with all the possible conditions and it brings up with two files one with the table and the other is metafile
 
 
 listTables() {
