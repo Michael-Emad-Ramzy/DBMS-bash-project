@@ -103,16 +103,115 @@ drop_database() {
 } #this function drops the choosen db by the user 
 
 
-createTable(){
-    read -p "Enter table name: " tableName
-        if [ -f "$tableName" ]; then
-            echo "Table '$tableName' already exists."
-        else
-            touch "$tableName"
-            echo "Table '$tableName' created successfully."
+createTable() {
+    local dbname="$1"
+    echo -e "Create Table"
+    read -p "Please enter the Table Name: " table_name
+
+    table_name=$(echo "$table_name" | xargs)
+
+    if [ -z "$table_name" ]; then
+        echo -e "Table name can't be empty"
+        createTable "$dbname" 
+        return
+    fi
+
+    if [[ "$table_name" == *" "* ]]; then
+        echo -e "Table name cannot contain spaces"
+        createTable "$dbname" 
+        return
+    fi
+
+    if [ -f "$table_name" ]; then
+        echo -e "Table '$table_name' already exists"
+        createTable "$dbname" 
+        return
+    fi
+
+    read -p "Enter number of columns: " colnumber
+
+    if ! [[ "$colnumber" =~ ^[1-9][0-9]*$ ]]; then
+        echo "Invalid number of columns."
+        return
+    fi
+
+    declare -a col_names
+    declare -a col_types
+    declare primary_key=""
+
+    echo "Enter column details:"
+    for ((index = 1; index <= colnumber; index++)); do
+        read -p "Column $index name: " colname
+
+        colname=$(echo "$colname" | tr ' ' '_')
+
+        if [[ "$colname" == *" "* ]]; then
+            echo "Column name cannot contain spaces."
+            ((index--))
+            continue
         fi
 
-}  #this is as the same as creating the db but it is just a table i enter the table name then it goes and check if it exist or not if not then it creates it 
+        read -p "Column $colname datatype (string/int): " coltype
+
+        if [[ "$coltype" != "string" && "$coltype" != "int" ]]; then
+            echo "Invalid datatype. Please enter 'string' or 'int'."
+            ((index--))
+            continue
+        fi
+
+        if [ -z "$primary_key" ]; then
+            read -p "Is $colname the primary key? (yes/no): " is_primary_key
+            if [ "$is_primary_key" == "yes" ]; then
+                primary_key=$colname
+            fi
+        fi
+
+        col_names+=("$colname")
+        col_types+=("$coltype")
+    done
+
+    touch "$table_name"
+    {
+        printf "| %-20s " "Column Name"
+        for ((i = 0; i < ${#col_names[@]}; i++)); do
+            printf "| %-20s " "${col_names[$i]}"
+        done
+        printf "|\n"
+        
+        printf "| %-20s " "Type"
+        for ((i = 0; i < ${#col_types[@]}; i++)); do
+            printf "| %-20s " "${col_types[$i]}"
+        done
+        printf "|\n"
+
+        printf "| %-20s " "Primary Key"
+        for ((i = 0; i < ${#col_names[@]}; i++)); do
+            if [ "${col_names[$i]}" == "$primary_key" ]; then
+                printf "| %-20s " "Yes"
+            else
+                printf "| %-20s " "No"
+            fi
+        done
+        printf "|\n"
+    } > "$table_name"
+    
+    meta_file="$table_name.meta"
+    echo "Field|Type|Key" > "$meta_file"
+    
+    for ((i = 0; i < ${#col_names[@]}; i++)); do
+        col_name=${col_names[$i]}
+        col_type=${col_types[$i]}
+        key=""
+        if [ "$col_name" == "$primary_key" ]; then
+            key="PK"
+        fi
+        echo "$col_name|$col_type|$key" >> "$meta_file"
+    done
+
+    echo -e "\nTable '$table_name' created successfully with $colnumber columns."
+
+} #so this create the table with all the possible conditions and it brings up with two files one with the table and the other is metafile
+
 
 listTables() {
     echo "Tables:"
