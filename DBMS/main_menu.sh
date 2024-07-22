@@ -215,13 +215,14 @@ createTable() {
 
 listTables() {
     echo "Tables:"
-    if [ "$(ls -A)" ]; then
-        ls
+    tables=$(ls | grep -v '\.meta$')
+    if [ -n "$tables" ]; then
+        echo "$tables"
     else
         echo "There are no existing tables."
         echo "Choose option 1 from the database menu to create a Table."
     fi
-} #this is for listing tables same as Dbs
+} #this shows the table of columns only (that's before inserting) , it doesn't show the meta one 
 
 dropTable() {
     read -p "Enter table name: " table_name
