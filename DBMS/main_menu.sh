@@ -68,12 +68,14 @@ connect_database() {
     read -p "Enter database name: " dbname
     if [ -d "$Database_Dir/$dbname" ]; then
         cd "$Database_Dir/$dbname" || exit
-        database_menu
+        database_menu "$dbname"
         cd "$OLDPWD" || exit
     else
         echo "Database does not exist!"
     fi
 } #this function connects to the database and show the db menu 
+
+
 
 
 drop_database() {
