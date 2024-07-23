@@ -313,98 +313,68 @@ dropTable() {
 
 
 
+
 insertIntoTable() {
-    local dbname="$1"
-    echo -e "\nInsert Into Table\n"
-    read -p "Please enter the name of the table: " table_name
+    echo -e "\nInsert into Table\n"
+    read -p "Please enter the name of the table: " tableName
 
-    table_name=$(echo "$table_name" | xargs)
-
-    if [ -z "$table_name" ]; then
-        echo -e "\nPlease enter a correct name\n"
-        insertIntoTable "$dbname"
+    if ! [[ -f "$tableName" ]]; then
+        echo "Table '$tableName' does not exist. Please choose another table."
         return
     fi
 
-    if [[ "$table_name" == *" "* ]]; then
-        echo -e "\nTable name cannot contain spaces\n"
-        insertIntoTable "$dbname"
-        return
-    fi
+    colsNum=$(awk 'END{print NR}' "$tableName.meta")
+    sep="|"
+    rSep="\n"
+    row=""
 
-    if [[ "$table_name" =~ [0-9] ]]; then
-        echo -e "\nTable name cannot contain numbers. Please enter a valid name.\n"
-        insertIntoTable "$dbname"
-        return
-    fi
+    declare -a values
 
-    # Check if the table exists
-    if [ ! -f "$table_name" ]; then
-        echo -e "\nTable '$table_name' does not exist\n"
-        insertIntoTable "$dbname"
-        return
-    fi
+    for (( i = 2; i <= $colsNum; i++ )); do
+        colName=$(awk 'BEGIN{FS="|"}{ if(NR=='$i') print $1}' "$tableName.meta")
+        colType=$(awk 'BEGIN{FS="|"}{if(NR=='$i') print $2}' "$tableName.meta")
+        colKey=$(awk 'BEGIN{FS="|"}{if(NR=='$i') print $3}' "$tableName.meta")
 
-    meta_file="$table_name.meta"
-    if [ ! -f "$meta_file" ]; then
-        echo -e "\nMeta file for table '$table_name' does not exist\n"
-        return
-    fi
+        echo -e "$colName ($colType) = \c"
+        read data
 
-    # Read column names and types from meta file
-    declare -a col_names
-    declare -a col_types
-    declare primary_key=""
-    
-    while IFS="|" read -r col_name col_type key; do
-        if [ "$col_name" != "Field" ]; then
-            col_names+=("$col_name")
-            col_types+=("$col_type")
-            if [ "$key" == "PK" ]; then
-                primary_key="$col_name"
-            fi
+        # Validate Input
+        if [[ $colType == "int" ]]; then
+            while ! [[ $data =~ ^[0-9]+$ ]]; do
+                echo -e "Invalid datatype! Please enter an integer."
+                echo -e "$colName ($colType) = \c"
+                read data
+            done
         fi
-    done < <(tail -n +2 "$meta_file")
 
-    declare -A new_row
-    for ((index = 0; index < ${#col_names[@]}; index++)); do
-        colname="${col_names[$index]}"
-        coltype="${col_types[$index]}"
-        
-        while true; do
-            read -p "Enter value for $colname ($coltype): " value
-            
-            if [[ "$coltype" == "int" && ! "$value" =~ ^[0-9]+$ ]]; then
-                echo -e "\nInvalid value for $colname. Expected an integer.\n"
-                continue
-            elif [[ "$coltype" == "string" && "$value" =~ [0-9] ]]; then
-                echo -e "\nInvalid value for $colname. Strings cannot contain numbers.\n"
-                continue
-            fi
-            
-            if [ "$colname" == "$primary_key" ]; then
-                # Check if primary key already exists
-                if grep -q "| $value |" "$table_name"; then
-                    echo -e "\nPrimary key value '$value' already exists. Please enter a unique value.\n"
-                    continue
+        if [[ $colKey == "PK" ]]; then
+            while true; do
+                if [[ $(awk -v data="$data" 'BEGIN{FS="|"}{if(NR > 1 && $'$i' == data) print $'$i'}' "$tableName") ]]; then
+                    echo -e "Invalid input for Primary Key! It must be unique."
+                else
+                    break
                 fi
-            fi
-            
-            new_row["$colname"]="$value"
-            break
-        done
+                echo -e "$colName ($colType) = \c"
+                read data
+            done
+        fi
+
+        values+=("$data")
     done
 
-    # Insert new row into table file
     {
-        printf "| "
-        for ((i = 0; i < ${#col_names[@]}; i++)); do
-            printf "%-20s | " "${new_row[${col_names[$i]}]}"
+        printf "| %-20s " ""
+        for ((i = 0; i < ${#values[@]}; i++)); do
+            printf "| %-20s " "${values[$i]}"
         done
-        printf "\n"
-    } >> "$table_name"
+        printf "|\n"
+    } >> "$tableName"
 
-    echo -e "\nRecord inserted successfully into table '$table_name'."
+    if [[ $? == 0 ]]; then
+        echo "Data inserted successfully."
+    else
+        echo "Error inserting data into table '$tableName'."
+    fi
 }
 
 selectFromTable() {
