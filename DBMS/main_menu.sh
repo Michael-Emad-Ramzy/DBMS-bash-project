@@ -407,6 +407,44 @@ insertIntoTable() {
     echo -e "\nRecord inserted successfully into table '$table_name'."
 }
 
+selectFromTable() {
+    local dbname="$1"
+    echo -e "\nSelect From Table\n"
+    read -p "Please enter the name of the table: " table_name
+
+    table_name=$(echo "$table_name" | xargs)
+
+    if [ -z "$table_name" ]; then
+        echo -e "\nPlease enter a correct name\n"
+        select_from_table "$dbname"
+        return
+    fi
+
+    if [[ "$table_name" == *" "* ]]; then
+        echo -e "\nTable name cannot contain spaces\n"
+        select_from_table "$dbname"
+        return
+    fi
+
+    if [[ "$table_name" =~ [0-9] ]]; then
+        echo -e "\nTable name cannot contain numbers. Please enter a valid name.\n"
+        select_from_table "$dbname"
+        return
+    fi
+
+    if [ ! -f "$table_name" ]; then
+        echo -e "\nTable '$table_name' does not exist\n"
+        select_from_table "$dbname"
+        return
+    fi
+
+    echo -e "\nTable: $table_name"
+    awk '{print $0}' "$table_name"
+}
+
+
+
+
 
 
 
@@ -430,7 +468,7 @@ function database_menu() {
             2) listTables ;;
             3) dropTable ;;
             4) insertIntoTable ;;
-            5) select_from_table ;;
+            5) selectFromTable ;;
             6) delete_from_table ;;
             7) update_table ;;
             8) break ;;
