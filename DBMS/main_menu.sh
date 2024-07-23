@@ -416,25 +416,25 @@ selectFromTable() {
 
     if [ -z "$table_name" ]; then
         echo -e "\nPlease enter a correct name\n"
-        select_from_table "$dbname"
+        selectFromTable "$dbname"
         return
     fi
 
     if [[ "$table_name" == *" "* ]]; then
         echo -e "\nTable name cannot contain spaces\n"
-        select_from_table "$dbname"
+        selectFromTable "$dbname"
         return
     fi
 
     if [[ "$table_name" =~ [0-9] ]]; then
         echo -e "\nTable name cannot contain numbers. Please enter a valid name.\n"
-        select_from_table "$dbname"
+        selectFromTable "$dbname"
         return
     fi
 
     if [ ! -f "$table_name" ]; then
         echo -e "\nTable '$table_name' does not exist\n"
-        select_from_table "$dbname"
+        selectFromTable "$dbname"
         return
     fi
 
