@@ -6,13 +6,15 @@ Database_Dir="./DBMS"
 mkdir -p "$Database_Dir"
 
 main_menu() {
-    echo -e "\n#############################################"
-    echo -e "////Main Menu:////\n"
-    echo "1. Create Database"
-    echo "2. List Databases"
-    echo "3. Connect To Database"
-    echo "4. Drop Database"
-    echo -e "5. Exit\n"
+    echo -e "\n---------------------------------------------"
+    echo -e "Main Menu:                                  |"
+    echo  "---------------------------------------------"
+    echo "1. Create Database                          |"
+    echo "2. List Databases                           |"
+    echo "3. Connect To Database                      |"
+    echo "4. Drop Database                            |"
+    echo "5. Exit                                     |"
+    echo  "---------------------------------------------"
     read -p "Choose From The Menu Above: " choice
 
     case $choice in
@@ -79,6 +81,7 @@ connect_database() {
     if [ -d "$Database_Dir/$dbname" ]; then
         chmod 755 "$Database_Dir/$dbname"  # Set read, write, and execute permissions
         cd "$Database_Dir/$dbname" || exit
+        clear
         database_menu "$dbname"
         cd "$OLDPWD" || exit
     else
@@ -279,7 +282,9 @@ listTables() {
     echo -e "\nYour Tables:"
     tables=$(ls | grep -v '\.meta$')
     if [ -n "$tables" ]; then
+        echo "---------------------------------------------"
         echo "$tables"
+        echo "---------------------------------------------"
     else
         echo "There are no existing tables."
         echo "Choose option 1 from the database menu to create a Table."
@@ -289,9 +294,12 @@ listTables() {
 dropTable() {
     read -p "Enter table name: " table_name
     if [ -f "$table_name" ]; then
-        echo -e "Are you sure you want to delete the table '$table_name'?\n"
+        echo "--------------------------------------------------------------"
+        echo "Are you sure you want to delete the table '$table_name'?"
+        echo "--------------------------------------------------------------"
         echo "For yes press 1"
-        echo -e "For no press 2\n"
+        echo "For no press 2"
+        echo "--------------------------------------------------------------"
         read -p "Enter your choice: " confirm
         case $confirm in
             1)
@@ -377,6 +385,9 @@ insertIntoTable() {
     fi
 }
 
+
+
+
 selectFromTable() {
     local dbname="$1"
     echo -e "\nSelect From Table\n"
@@ -407,31 +418,78 @@ selectFromTable() {
         selectFromTable "$dbname"
         return
     fi
+    clear
+    echo -e "\n---------------------------------------------"
+    echo "Select Options:                             |"
+    echo "---------------------------------------------"
+    echo "1. Select All                               |"
+    echo "2. Select Specific Column                   |"
+    echo -e "---------------------------------------------\n"
+    read -p "Enter your choice (1 or 2): " choice
 
-    echo -e "\nTable: $table_name"
-    awk '{print $0}' "$table_name"
+    case $choice in
+        1)
+
+            echo -e "\n\nTable: $table_name"
+            echo "----------------------------------------------------------------------------------------------------------------"
+            awk 'NR > 3' "$table_name"
+            echo "----------------------------------------------------------------------------------------------------------------"
+            ;;
+        2)
+            read -p "Please enter the column name: " column_name
+
+            column_name=$(echo "$column_name" | xargs)
+
+            if [ -z "$column_name" ]; then
+                echo -e "\nPlease enter a correct column name\n"
+                selectFromTable "$dbname"
+                return
+            fi
+
+            column_index=$(awk -F '|' -v col="$column_name" '
+                NR==1 {
+                    for (i=1; i<=NF; i++) {
+                        if ($i ~ col) {
+                            print i
+                        }
+                    }
+                }' "$table_name")
+
+            if [ -z "$column_index" ]; then
+                echo -e "\nColumn '$column_name' does not exist\n"
+                selectFromTable "$dbname"
+                return
+            fi
+            echo "---------------------------------------------"
+            echo -e "\nTable: $table_name - Column: $column_name"
+            awk -F '|' -v col_index="$column_index" 'NR > 3 {print $col_index}' "$table_name"
+            echo "---------------------------------------------"
+            ;;
+        *)
+            echo "Invalid choice"
+            selectFromTable "$dbname"
+            ;;
+    esac
 }
-
-
-
-
-
 
 
 
 # Function to display the database menu
 function database_menu() {
+    clear
     while true; do
-        echo -e "\n #############################################"
-        echo -e "Database Menu:\n"
-        echo "1. Create Table"
-        echo "2. List Tables"
-        echo "3. Drop Table"
-        echo "4. Insert into Table"
-        echo "5. Select From Table"
-        echo "6. Delete From Table"
-        echo "7. Update Table"
-        echo -e "8. Back to Main Menu\n"
+        echo -e "\n---------------------------------------------"
+        echo -e "Database Menu:                              |"
+         echo "---------------------------------------------"
+        echo "1. Create Table                             |"
+        echo "2. List Tables                              |"
+        echo "3. Drop Table                               |"
+        echo "4. Insert into Table                        |"
+        echo "5. Select From Table                        |"
+        echo "6. Delete From Table                        |"
+        echo "7. Update Table                             |"
+        echo "8. Back to Main Menu                        |"
+        echo -e "---------------------------------------------\n"
         read -p "Choose an option: " option
         case $option in
             1) createTable ;;
@@ -441,7 +499,8 @@ function database_menu() {
             5) selectFromTable ;;
             6) delete_from_table ;;
             7) update_table ;;
-            8) break ;;
+            8) clear 
+               break ;;
             *) echo "Invalid option!" ;;
         esac
     done
