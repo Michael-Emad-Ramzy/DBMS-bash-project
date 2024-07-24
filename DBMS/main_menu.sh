@@ -587,110 +587,85 @@ deleteFromTable() {
     esac
 }
 
-update_table() {
+updateTable() {
     echo -e "\nUpdate Table\n"
     read -p "Please enter the name of the table: " table_name
 
     if ! [[ -f "$table_name" ]]; then
-        echo "Table '$table_name' does not exist. Please choose another table."
+        echo "Table '$table_name' does not exist."
         return
     fi
 
-    echo "--------------------------------------------------------------"
-    echo "Choose what you want to update:"
-    echo "--------------------------------------------------------------"
-    echo "1. Update Row"
-    echo "2. Update Column"
-    echo "--------------------------------------------------------------"
-    read -p "Enter your choice: " update_choice
+    # Display current table data without showing the table structure
+    awk 'NR > 3' "$table_name"
 
-    case $update_choice in
-        1) 
-            read -p "Enter the primary key value of the row you want to update: " pk_value
-            pk_col=$(awk 'BEGIN{FS="|"}{if($3 == "PK") print $1}' "$table_name.meta")
-            pk_index=$(awk -F '|' -v pk="$pk_col" 'NR==1 {for (i=1; i<=NF; i++) if ($i ~ pk) print i}' "$table_name")
+    read -p "Enter the primary key value of the row you want to update: " pk_value
+    pk_col=$(awk 'BEGIN{FS="|"}{if($3 == "PK") print $1}' "$table_name.meta")
+    pk_index=$(awk -F '|' -v pk="$pk_col" 'NR==1 {for (i=1; i<=NF; i++) if ($i ~ pk) print i}' "$table_name")
 
-            row_num=$(awk -F '|' -v pk_col="$pk_index" -v pk_val="$pk_value" 'NR > 3 && $pk_col == pk_val {print NR}' "$table_name")
+    if [ -z "$pk_index" ]; then
+        echo "Primary key column not found."
+        return
+    fi
 
-            if [[ -z "$row_num" ]]; then
-                echo "Primary key value '$pk_value' does not exist."
-                return
+    if ! awk -F '|' -v pk_col="$pk_index" -v pk_val="$pk_value" 'NR > 3 && $pk_col == pk_val {found=1} END {if (found == 0) exit 1}' "$table_name"; then
+        echo "Row with primary key '$pk_value' not found."
+        return
+    fi
+
+    echo -e "\nAre you sure you want to update the row with primary key '$pk_value'?"
+    echo "For yes press 1"
+    echo "For no press 2"
+    read -p "Enter your choice: " confirm
+
+    if [ "$confirm" -eq 1 ]; then
+        declare -a values
+        colsNum=$(awk 'END{print NR}' "$table_name.meta")
+
+        for ((i = 2; i <= $colsNum; i++)); do
+            colName=$(awk 'BEGIN{FS="|"}{ if(NR=='$i') print $1}' "$table_name.meta")
+            colType=$(awk 'BEGIN{FS="|"}{if(NR=='$i') print $2}' "$table_name.meta")
+
+            if [ "$colName" == "$pk_col" ]; then
+                values+=("$pk_value")
+                continue
             fi
 
-            colsNum=$(awk 'END{print NR}' "$table_name.meta")
-            updated_row="|                      "
+            echo -e "$colName ($colType) = \c"
+            read new_value
 
-            for (( i = 2; i <= $colsNum; i++ )); do
-                colName=$(awk -F '|' 'NR=='$i' {print $1}' "$table_name.meta")
-                colType=$(awk -F '|' 'NR=='$i' {print $2}' "$table_name.meta")
-
-                echo -e "$colName ($colType): \c"
-                read new_value
-
-                # Validate Input
-                if [[ $colType == "int" ]]; then
-                    while ! [[ $new_value =~ ^[0-9]+$ ]]; do
-                        echo -e "Invalid datatype! Please enter an integer."
-                        echo -e "$colName ($colType): \c"
-                        read new_value
-                    done
-                fi
-
-                updated_row+="| $(printf '%-20s' "$new_value")"
-            done
-
-            updated_row+="|"
-
-            awk -v row="$row_num" -v new_row="$updated_row" 'NR == row {print new_row; next} {print}' "$table_name" > tmpfile && mv tmpfile "$table_name"
-
-            if [[ $? -eq 0 ]]; then
-                echo "Row updated successfully."
-            else
-                echo "Error updating row."
-            fi
-            ;;
-        2)
-            read -p "Enter the column name you want to update: " col_name
-
-            col_index=$(awk -F '|' -v col="$col_name" '
-            NR==1 {
-                for (i=1; i<=NF; i++) {
-                    if ($i ~ col) {
-                        print i
-                    }
-                }
-            }' "$table_name")
-
-            if [[ -z "$col_index" ]]; then
-                echo "Column '$col_name' does not exist."
-                return
+            if [[ $colType == "int" ]]; then
+                while ! [[ $new_value =~ ^[0-9]+$ ]]; do
+                    echo -e "Invalid datatype! Please enter an integer."
+                    echo -e "$colName ($colType) = \c"
+                    read new_value
+                done
             fi
 
-            echo "--------------------------------------------------------------"
-            echo "Enter the new values for the column:"
-            echo "--------------------------------------------------------------"
+            values+=("$new_value")
+        done
 
-            awk -v col="$col_index" -F '|' '
-            BEGIN { OFS="|"; }
-            NR > 3 {
-                printf("Enter new value for row %d: \c", NR-3)
-                getline new_value < "-"
-                $col = sprintf("%-20s", new_value)
-                print
-            }' "$table_name" > tmpfile && mv tmpfile "$table_name"
+        awk -F '|' -v pk_col="$pk_index" -v pk_val="$pk_value" -v values="${values[*]}" '
+        BEGIN { OFS="|"; split(values, v, " "); found=0 }
+        NR > 3 {
+            if ($pk_col == pk_val) {
+                found=1
+                $0 = sprintf("| %-20s | %-20s | %-20s | %-20s |", "", v[1], v[2], v[3])
+            }
+            print
+        }
+        END { if (found == 0) print "Error: Primary key not found." }
+        ' "$table_name" > tmpfile && mv tmpfile "$table_name"
 
-            if [[ $? -eq 0 ]]; then
-                echo "Column updated successfully."
-            else
-                echo "Error updating column."
-            fi
-            ;;
-        *)
-            echo "Invalid choice"
-            ;;
-    esac
+        if [ $? -eq 0 ]; then
+            echo "Row updated successfully."
+        else
+            echo "Error updating row."
+        fi
+    else
+        echo "Update cancelled."
+    fi
 }
-
 
 
 # Function to display the database menu
