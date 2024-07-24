@@ -472,6 +472,48 @@ selectFromTable() {
     esac
 }
 
+deleteFromTable() {
+    echo -e "\nDelete From Table\n"
+    read -p "Enter the table name: " table_name
+
+    if ! [[ -f "$table_name" ]]; then
+        echo "Table '$table_name' does not exist. Please choose another table."
+        return
+    fi
+
+    read -p "Enter the primary key value of the row you want to delete: " pk_value
+    pk_col=$(awk 'BEGIN{FS="|"}{if($3 == "PK") print $1}' "$table_name.meta")
+    pk_index=$(awk -F '|' -v pk="$pk_col" 'NR==1 {for (i=1; i<=NF; i++) if ($i ~ pk) print i}' "$table_name")
+
+    echo "--------------------------------------------------------------"
+    echo "Are you sure you want to delete the row?"
+    echo "--------------------------------------------------------------"
+    echo "For yes press 1"
+    echo "For no press 2"
+    echo "--------------------------------------------------------------"
+    read -p "Enter your choice: " confirm
+
+    if [[ "$confirm" -eq 1 ]]; then
+        awk -F '|' -v pk_col="$pk_index" -v pk_val="$pk_value" '
+        BEGIN { OFS="|"; found=0 }
+        NR == 1 { print; next }
+        NR == 2 { print; next }
+        NR == 3 { print; next }
+        $pk_col == pk_val { found=1; next }
+        { print }
+        END { if (found == 0) print "Error: Primary key not found." }
+        ' "$table_name" > tmpfile && mv tmpfile "$table_name"
+
+        if [ $? -eq 0 ]; then
+            echo "Row deleted successfully."
+        else
+            echo "Error deleting row."
+        fi
+    else
+        echo "Deletion cancelled."
+    fi
+}
+
 
 
 # Function to display the database menu
@@ -497,7 +539,7 @@ function database_menu() {
             3) dropTable ;;
             4) insertIntoTable ;;
             5) selectFromTable ;;
-            6) delete_from_table ;;
+            6) deleteFromTable ;;
             7) update_table ;;
             8) clear 
                break ;;
