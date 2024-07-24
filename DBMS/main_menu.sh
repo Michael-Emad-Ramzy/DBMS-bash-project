@@ -481,39 +481,111 @@ deleteFromTable() {
         return
     fi
 
-    read -p "Enter the primary key value of the row you want to delete: " pk_value
-    pk_col=$(awk 'BEGIN{FS="|"}{if($3 == "PK") print $1}' "$table_name.meta")
-    pk_index=$(awk -F '|' -v pk="$pk_col" 'NR==1 {for (i=1; i<=NF; i++) if ($i ~ pk) print i}' "$table_name")
-
     echo "--------------------------------------------------------------"
-    echo "Are you sure you want to delete the row?"
+    echo "Choose what you want to delete:"
     echo "--------------------------------------------------------------"
-    echo "For yes press 1"
-    echo "For no press 2"
+    echo "1. Delete Row"
+    echo "2. Delete Column"
     echo "--------------------------------------------------------------"
-    read -p "Enter your choice: " confirm
+    read -p "Enter your choice: " delete_choice
 
-    if [[ "$confirm" -eq 1 ]]; then
-        awk -F '|' -v pk_col="$pk_index" -v pk_val="$pk_value" '
-        BEGIN { OFS="|"; found=0 }
-        NR == 1 { print; next }
-        NR == 2 { print; next }
-        NR == 3 { print; next }
-        $pk_col == pk_val { found=1; next }
-        { print }
-        END { if (found == 0) print "Error: Primary key not found." }
-        ' "$table_name" > tmpfile && mv tmpfile "$table_name"
+    case $delete_choice in
+        1)
+            read -p "Enter the primary key value of the row you want to delete: " pk_value
+            pk_col=$(awk 'BEGIN{FS="|"}{if($3 == "PK") print $1}' "$table_name.meta")
+            pk_index=$(awk -F '|' -v pk="$pk_col" 'NR==1 {for (i=1; i<=NF; i++) if ($i ~ pk) print i}' "$table_name")
 
-        if [ $? -eq 0 ]; then
-            echo "Row deleted successfully."
-        else
-            echo "Error deleting row."
-        fi
-    else
-        echo "Deletion cancelled."
-    fi
+            echo "--------------------------------------------------------------"
+            echo "Are you sure you want to delete the row?"
+            echo "--------------------------------------------------------------"
+            echo "For yes press 1"
+            echo "For no press 2"
+            echo "--------------------------------------------------------------"
+            read -p "Enter your choice: " confirm
+
+            if [[ "$confirm" -eq 1 ]]; then
+                awk -F '|' -v pk_col="$pk_index" -v pk_val="$pk_value" '
+                BEGIN { OFS="|"; found=0 }
+                NR == 1 { print; next }
+                NR == 2 { print; next }
+                NR == 3 { print; next }
+                $pk_col == pk_val { found=1; next }
+                { print }
+                END { if (found == 0) print "Error: Primary key not found." }
+                ' "$table_name" > tmpfile && mv tmpfile "$table_name"
+
+                if [ $? -eq 0 ]; then
+                    echo "Row deleted successfully."
+                else
+                    echo "Error deleting row."
+                fi
+            else
+                echo "Deletion cancelled."
+            fi
+            ;;
+        2)
+            read -p "Enter the column name you want to delete: " col_name
+
+            col_index=$(awk -F '|' -v col="$col_name" '
+            NR==1 {
+                for (i=1; i<=NF; i++) {
+                    if ($i ~ col) {
+                        print i
+                    }
+                }
+            }' "$table_name")
+
+            if [ -z "$col_index" ]; then
+                echo "Column '$col_name' does not exist."
+                return
+            fi
+
+            echo "--------------------------------------------------------------"
+            echo "Are you sure you want to delete the column '$col_name'?"
+            echo "--------------------------------------------------------------"
+            echo "For yes press 1"
+            echo "For no press 2"
+            echo "--------------------------------------------------------------"
+            read -p "Enter your choice: " confirm
+
+            if [[ "$confirm" -eq 1 ]]; then
+                awk -v col_index="$col_index" -F '|' '
+                BEGIN { OFS="|"; }
+                {
+                    $col_index = ""
+                    gsub(/\|+/, "|")
+                    gsub(/^\|/, "")
+                    gsub(/\|$/, "")
+                    print
+                }
+                ' "$table_name" > tmpfile && mv tmpfile "$table_name"
+
+                awk -v col_name="$col_name" -F '|' '
+                BEGIN { OFS="|"; }
+                NR==1 { for(i=1; i<=NF; i++) if ($i == col_name) col_index = i }
+                {
+                    $col_index = ""
+                    gsub(/\|+/, "|")
+                    gsub(/^\|/, "")
+                    gsub(/\|$/, "")
+                    print
+                }
+                ' "$table_name.meta" > tmpfile && mv tmpfile "$table_name.meta"
+
+                if [ $? -eq 0 ]; then
+                    echo "Column deleted successfully."
+                else
+                    echo "Error deleting column."
+                fi
+            else
+                echo "Deletion cancelled."
+            fi
+            ;;
+        *)
+            echo "Invalid choice"
+            ;;
+    esac
 }
-
 
 
 # Function to display the database menu
