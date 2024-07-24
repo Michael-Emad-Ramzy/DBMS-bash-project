@@ -647,7 +647,10 @@ updateTable() {
 
         awk -F '|' -v pk_col="$pk_index" -v pk_val="$pk_value" -v values="${values[*]}" '
         BEGIN { OFS="|"; split(values, v, " "); found=0 }
-        NR > 3 {
+        NR == 1 { print; next }
+        NR == 2 { print; next }
+        NR == 3 { print; next }
+        {
             if ($pk_col == pk_val) {
                 found=1
                 $0 = sprintf("| %-20s | %-20s | %-20s | %-20s |", "", v[1], v[2], v[3])
@@ -692,7 +695,7 @@ function database_menu() {
             4) insertIntoTable ;;
             5) selectFromTable ;;
             6) deleteFromTable ;;
-            7) update_table ;;
+            7) updateTable ;;
             8) clear 
                break ;;
             *) echo "Invalid option!" ;;
