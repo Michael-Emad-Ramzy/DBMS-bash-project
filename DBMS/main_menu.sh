@@ -642,12 +642,13 @@ updateTable() {
 
 
 # Function to display the database menu
-function database_menu() {
+database_menu() {
     clear
+    local dbname="$1"
     while true; do
         echo -e "\n---------------------------------------------"
         echo -e "Database Menu:                              |"
-         echo "---------------------------------------------"
+        echo "---------------------------------------------"
         echo "1. Create Table                             |"
         echo "2. List Tables                              |"
         echo "3. Drop Table                               |"
@@ -659,13 +660,13 @@ function database_menu() {
         echo -e "---------------------------------------------\n"
         read -p "Choose an option: " option
         case $option in
-            1) createTable ;;
-            2) listTables ;;
-            3) dropTable ;;
-            4) insertIntoTable ;;
-            5) selectFromTable ;;
-            6) deleteFromTable ;;
-            7) updateTable ;;
+            1) createTable "$dbname" ;;
+            2) listTables "$dbname" ;;
+            3) dropTable "$dbname" ;;
+            4) insertIntoTable "$dbname" ;;
+            5) selectFromTable "$dbname" ;;
+            6) deleteFromTable "$dbname" ;;
+            7) updateTable "$dbname" ;;
             8) clear 
                break ;;
             *) echo "Invalid option!" ;;
