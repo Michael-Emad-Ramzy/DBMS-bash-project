@@ -28,26 +28,28 @@ main_menu() {
     main_menu  # Call main_menu again to show the menu after an option is executed
 }
 
-
 create_database() {
     echo -e "\nCreate Database"
-    while true; do
-        read -p "Enter database name: " db_name
-        db_name=$(echo "$db_name" | xargs)
+    read -p "Enter database name: " db_name
+    db_name=$(echo "$db_name" | xargs) 
 
-        # Check for empty input
-        if [ -z "$db_name" ]; then
-            echo -e "\nDatabase name cannot be empty. Please enter a valid name."
-        # Check for invalid characters (anything that's not alphanumeric or underscore)
-        elif [[ ! "$db_name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
-            echo -e "\nDatabase name can only contain letters, numbers, and underscores, and must start with a letter or underscore. Please enter a valid name."
-        # (Optional) Check for SQL keywords
-        elif [[ "$db_name" =~ ^(SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|TABLE|DATABASE)$ ]]; then
-            echo -e "\nDatabase name cannot be an SQL keyword. Please enter a valid name."
-        else
-            break
-        fi
-    done
+    if [ -z "$db_name" ]; then
+        echo -e "\nDatabase name cannot be empty. Please enter a valid name."
+        create_database
+        return
+    fi
+
+    if [[ "$db_name" == *" "* ]]; then
+        echo -e "\nDatabase name cannot contain spaces. Please enter a valid name."
+        create_database
+        return
+    fi
+
+    if [[ "$db_name" =~ [0-9] ]]; then
+        echo -e "\nDatabase name cannot contain numbers. Please enter a valid name."
+        create_database
+        return
+    fi
 
     if [ -d "$Database_Dir/$db_name" ]; then
         echo -e "\nDatabase '$db_name' already exists."
@@ -128,32 +130,47 @@ drop_database() {
 createTable() {
     local dbname="$1"
     echo -e "\nCreate Table\n"
-    while true; do
-        read -p "Please enter the name of the table: " table_name
-        table_name=$(echo "$table_name" | xargs)
+    read -p "Please enter the name of the table: " table_name
 
-        if [ -z "$table_name" ]; then
-            echo -e "\nTable name cannot be empty. Please enter a valid name."
-        elif [[ ! "$table_name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
-            echo -e "\nTable name can only contain letters, numbers, and underscores, and must start with a letter or underscore. Please enter a valid name."
-        elif [[ "$table_name" =~ ^(SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|TABLE|DATABASE)$ ]]; then
-            echo -e "\nTable name cannot be an SQL keyword. Please enter a valid name."
-        else
-            break
-        fi
-    done
 
-    # Check if the table already exists
-    if [ -f "$dbname/$table_name" ]; then
-        echo -e "\nTable '$table_name' already exists."
+    table_name=$(echo "$table_name" | xargs)
+
+
+    if [ -z "$table_name" ]; then
+        echo -e "\nPlease enter a correct name\n"
+        createTable "$dbname" 
+        
+        return
+    fi
+
+
+    if [[ "$table_name" == *" "* ]]; then
+        echo -e "\nTable name cannot contain spaces\n"
+        createTable "$dbname" 
+        
+        return
+    fi
+
+    if [[ "$table_name" =~ [0-9] ]]; then
+        echo -e "\nTable name cannot contain numbers. Please enter a valid name.\n"
         createTable "$dbname"
         return
     fi
 
+
+    # Check if the table already exists
+    if [ -f "$table_name" ]; then
+        echo -e "\nTable '$table_name' already exists\n"
+        createTable "$dbname" 
+        return
+    fi
+
+
     read -p "Enter number of columns: " colnumber
 
+
     if ! [[ "$colnumber" =~ ^[1-9][0-9]*$ ]]; then
-        echo -e "\nInvalid number of columns. Please enter a positive number."
+        echo -e "\nInvalid number of columns. Please enter a positive number.\n"
         return
     fi
 
@@ -163,20 +180,27 @@ createTable() {
 
     echo -e "\nEnter column details:\n"
     for ((index = 1; index <= colnumber; index++)); do
-        while true; do
-            read -p "Column $index name: " colname
-            colname=$(echo "$colname" | xargs | tr ' ' '_')
+        read -p "Column $index name: " colname
 
-            if [[ ! "$colname" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
-                echo -e "\nColumn name can only contain letters, numbers, and underscores, and must start with a letter or underscore. Please enter a valid name."
-            elif [[ "$colname" =~ ^(SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|TABLE|DATABASE)$ ]]; then
-                echo -e "\nColumn name cannot be an SQL keyword. Please enter a valid name."
-            else
-                break
-            fi
-        done
+        colname=$(echo "$colname" | tr ' ' '_')
+
+
+        if [[ "$colname" == *" "* ]]; then
+            echo -e "\nColumn name cannot contain spaces."
+            ((index--))
+            continue
+        fi
+
+        # Check if the column name contains numbers
+        if [[ "$colname" =~ [0-9] ]]; then
+            echo -e "\nColumn name cannot contain numbers."
+            ((index--))
+            continue
+        fi
+
 
         read -p "Column $colname datatype (string/int): " coltype
+
 
         if [[ "$coltype" != "string" && "$coltype" != "int" ]]; then
             echo -e "\nInvalid datatype. Please enter 'string' or 'int'."
@@ -184,28 +208,32 @@ createTable() {
             continue
         fi
 
+
         while true; do
-            if [ -z "$primary_key" ]; then
-                read -p "Is $colname the primary key? (yes/no): " is_primary_key
-                if [[ "$is_primary_key" == "yes" || "$is_primary_key" == "no" ]]; then
-                    if [ "$is_primary_key" == "yes" ]; then
-                        primary_key=$colname
-                    fi
-                    break
-                else
-                    echo "Invalid input. Please enter 'yes' or 'no'."
+        if [ -z "$primary_key" ]; then
+            read -p "Is $colname the primary key? (yes/no): " is_primary_key
+            # Ensure the input is either "yes" or "no"
+            if [[ "$is_primary_key" == "yes" || "$is_primary_key" == "no" ]]; then
+                if [ "$is_primary_key" == "yes" ]; then
+                    primary_key=$colname
                 fi
-            else
                 break
+                else
+                echo "Invalid input. Please enter 'yes' or 'no'"
             fi
+            else
+            break
+        fi
         done
+
+
 
         col_names+=("$colname")
         col_types+=("$coltype")
     done
 
-    mkdir -p "$dbname"
-    touch "$dbname/$table_name"
+
+    touch "$table_name"
     {
         printf "| %-20s " "Column Name"
         for ((i = 0; i < ${#col_names[@]}; i++)); do
@@ -228,9 +256,10 @@ createTable() {
             fi
         done
         printf "|\n"
-    } > "$dbname/$table_name"
+    } > "$table_name"
+    
 
-    meta_file="$dbname/$table_name.meta"
+    meta_file="$table_name.meta"
     echo "Field |Type |Key" > "$meta_file"
     
     for ((i = 0; i < ${#col_names[@]}; i++)); do
@@ -244,6 +273,7 @@ createTable() {
     done
 
     echo -e "\nTable '$table_name' created successfully with $colnumber columns."
+
 }
 #so this create the table with all the possible conditions and it brings up with two files one with the table and the other is metafile
 
@@ -642,13 +672,12 @@ updateTable() {
 
 
 # Function to display the database menu
-database_menu() {
+function database_menu() {
     clear
-    local dbname="$1"
     while true; do
         echo -e "\n---------------------------------------------"
         echo -e "Database Menu:                              |"
-        echo "---------------------------------------------"
+         echo "---------------------------------------------"
         echo "1. Create Table                             |"
         echo "2. List Tables                              |"
         echo "3. Drop Table                               |"
@@ -660,13 +689,13 @@ database_menu() {
         echo -e "---------------------------------------------\n"
         read -p "Choose an option: " option
         case $option in
-            1) createTable "$dbname" ;;
-            2) listTables "$dbname" ;;
-            3) dropTable "$dbname" ;;
-            4) insertIntoTable "$dbname" ;;
-            5) selectFromTable "$dbname" ;;
-            6) deleteFromTable "$dbname" ;;
-            7) updateTable "$dbname" ;;
+            1) createTable ;;
+            2) listTables ;;
+            3) dropTable ;;
+            4) insertIntoTable ;;
+            5) selectFromTable ;;
+            6) deleteFromTable ;;
+            7) updateTable ;;
             8) clear 
                break ;;
             *) echo "Invalid option!" ;;
