@@ -51,23 +51,42 @@ create_database() {
         return
     fi
 
+    if [[ "$db_name" =~ [^a-zA-Z_] ]]; then
+        echo -e "\nDatabase name can only contain letters and underscores. Please enter a valid name."
+        create_database
+        return
+    fi
+
+    if [[ "$db_name" =~ ^[_-] || "$db_name" =~ [_-]$ ]]; then
+        echo -e "\nDatabase name cannot start or end with an underscore or hyphen. Please enter a valid name."
+        create_database
+        return
+    fi
+
+    if [[ "$db_name" =~ __ ]]; then
+        echo -e "\nDatabase name cannot contain consecutive underscores. Please enter a valid name."
+        create_database
+        return
+    fi
+
+    if [[ ${#db_name} -gt 30 ]]; then
+        echo -e "\nDatabase name cannot be longer than 30 characters. Please enter a valid name."
+        create_database
+        return
+    fi
+
+    RESERVED_WORDS="admin|database|root|system|table"
+    if [[ "$db_name" =~ ^($RESERVED_WORDS)$ ]]; then
+        echo -e "\nDatabase name cannot be a reserved word. Please enter a valid name."
+        create_database
+        return
+    fi
+
     if [ -d "$Database_Dir/$db_name" ]; then
         echo -e "\nDatabase '$db_name' already exists."
     else
         mkdir -p "$Database_Dir/$db_name"
         echo -e "\nDatabase '$db_name' created successfully."
-    fi
-}
- #create DBs with Conditions like if i created with empty name , contain spaces and so on 
-
-
-list_databases() {
-    echo -e "\nDatabases:"
-    if [ "$(ls -A "$Database_Dir")" ]; then
-        ls -l "$Database_Dir" | grep "^d" | awk '{print $9}'
-    else
-        echo -e "\nThere are no existing databases.\n"
-        echo "Click 1 from the main menu to create a Database."
     fi
 }
 
@@ -132,22 +151,19 @@ createTable() {
     echo -e "\nCreate Table\n"
     read -p "Please enter the name of the table: " table_name
 
-
     table_name=$(echo "$table_name" | xargs)
 
+    RESERVED_WORDS="admin|database|root|system|table"
 
     if [ -z "$table_name" ]; then
         echo -e "\nPlease enter a correct name\n"
         createTable "$dbname" 
-        
         return
     fi
-
 
     if [[ "$table_name" == *" "* ]]; then
         echo -e "\nTable name cannot contain spaces\n"
         createTable "$dbname" 
-        
         return
     fi
 
@@ -157,6 +173,35 @@ createTable() {
         return
     fi
 
+    if [[ "$table_name" =~ [^a-zA-Z_] ]]; then
+        echo -e "\nTable name can only contain letters and underscores. Please enter a valid name."
+        createTable "$dbname"
+        return
+    fi
+
+    if [[ "$table_name" =~ ^[_-] || "$table_name" =~ [_-]$ ]]; then
+        echo -e "\nTable name cannot start or end with an underscore or hyphen. Please enter a valid name."
+        createTable "$dbname"
+        return
+    fi
+
+    if [[ "$table_name" =~ __ ]]; then
+        echo -e "\nTable name cannot contain consecutive underscores. Please enter a valid name."
+        createTable "$dbname"
+        return
+    fi
+
+    if [[ ${#table_name} -gt 30 ]]; then
+        echo -e "\nTable name cannot be longer than 30 characters. Please enter a valid name."
+        createTable "$dbname"
+        return
+    fi
+
+    if [[ "$table_name" =~ ^($RESERVED_WORDS)$ ]]; then
+        echo -e "\nTable name cannot be a reserved word. Please enter a valid name."
+        createTable "$dbname"
+        return
+    fi
 
     # Check if the table already exists
     if [ -f "$table_name" ]; then
@@ -165,9 +210,7 @@ createTable() {
         return
     fi
 
-
     read -p "Enter number of columns: " colnumber
-
 
     if ! [[ "$colnumber" =~ ^[1-9][0-9]*$ ]]; then
         echo -e "\nInvalid number of columns. Please enter a positive number.\n"
@@ -182,8 +225,13 @@ createTable() {
     for ((index = 1; index <= colnumber; index++)); do
         read -p "Column $index name: " colname
 
-        colname=$(echo "$colname" | tr ' ' '_')
+        colname=$(echo "$colname" | xargs)
 
+        if [ -z "$colname" ]; then
+            echo -e "\nColumn name cannot be empty."
+            ((index--))
+            continue
+        fi
 
         if [[ "$colname" == *" "* ]]; then
             echo -e "\nColumn name cannot contain spaces."
@@ -191,16 +239,43 @@ createTable() {
             continue
         fi
 
-        # Check if the column name contains numbers
         if [[ "$colname" =~ [0-9] ]]; then
             echo -e "\nColumn name cannot contain numbers."
             ((index--))
             continue
         fi
 
+        if [[ "$colname" =~ [^a-zA-Z_] ]]; then
+            echo -e "\nColumn name can only contain letters and underscores."
+            ((index--))
+            continue
+        fi
+
+        if [[ "$colname" =~ ^[_-] || "$colname" =~ [_-]$ ]]; then
+            echo -e "\nColumn name cannot start or end with an underscore or hyphen."
+            ((index--))
+            continue
+        fi
+
+        if [[ "$colname" =~ __ ]]; then
+            echo -e "\nColumn name cannot contain consecutive underscores."
+            ((index--))
+            continue
+        fi
+
+        if [[ ${#colname} -gt 30 ]]; then
+            echo -e "\nColumn name cannot be longer than 30 characters."
+            ((index--))
+            continue
+        fi
+
+        if [[ "$colname" =~ ^($RESERVED_WORDS)$ ]]; then
+            echo -e "\nColumn name cannot be a reserved word."
+            ((index--))
+            continue
+        fi
 
         read -p "Column $colname datatype (string/int): " coltype
-
 
         if [[ "$coltype" != "string" && "$coltype" != "int" ]]; then
             echo -e "\nInvalid datatype. Please enter 'string' or 'int'."
@@ -208,30 +283,25 @@ createTable() {
             continue
         fi
 
-
         while true; do
-        if [ -z "$primary_key" ]; then
-            read -p "Is $colname the primary key? (yes/no): " is_primary_key
-            # Ensure the input is either "yes" or "no"
-            if [[ "$is_primary_key" == "yes" || "$is_primary_key" == "no" ]]; then
-                if [ "$is_primary_key" == "yes" ]; then
-                    primary_key=$colname
-                fi
-                break
+            if [ -z "$primary_key" ]; then
+                read -p "Is $colname the primary key? (yes/no): " is_primary_key
+                if [[ "$is_primary_key" == "yes" || "$is_primary_key" == "no" ]]; then
+                    if [ "$is_primary_key" == "yes" ]; then
+                        primary_key=$colname
+                    fi
+                    break
                 else
-                echo "Invalid input. Please enter 'yes' or 'no'"
-            fi
+                    echo "Invalid input. Please enter 'yes' or 'no'"
+                fi
             else
-            break
-        fi
+                break
+            fi
         done
-
-
 
         col_names+=("$colname")
         col_types+=("$coltype")
     done
-
 
     touch "$table_name"
     {
@@ -258,9 +328,8 @@ createTable() {
         printf "|\n"
     } > "$table_name"
     
-
     meta_file="$table_name.meta"
-    echo "Field |Type |Key" > "$meta_file"
+    echo "Field|Type|Key" > "$meta_file"
     
     for ((i = 0; i < ${#col_names[@]}; i++)); do
         col_name=${col_names[$i]}
@@ -273,7 +342,6 @@ createTable() {
     done
 
     echo -e "\nTable '$table_name' created successfully with $colnumber columns."
-
 }
 #so this create the table with all the possible conditions and it brings up with two files one with the table and the other is metafile
 
