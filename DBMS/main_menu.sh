@@ -93,6 +93,16 @@ create_database() {
     #simple is it just list all the databases that exist in the directory 
 
 
+list_databases() {
+    echo -e "\nDatabases:"
+    if [ "$(ls -A "$Database_Dir")" ]; then
+        ls -l "$Database_Dir" | grep "^d" | awk '{print $9}'
+    else
+        echo -e "\nThere are no existing databases.\n"
+        echo "Click 1 from the main menu to create a Database."
+    fi
+}
+
 
 connect_database() {
     echo -e "\nConnect to Database"
