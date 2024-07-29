@@ -30,7 +30,7 @@ main_menu() {
 
 create_database() {
     echo -e "\nCreate Database"
-    read -p "Enter database name: " db_name
+    read -r -p "Enter database name: " db_name
     db_name=$(echo "$db_name" | xargs) 
 
     if [ -z "$db_name" ]; then
@@ -159,7 +159,7 @@ drop_database() {
 createTable() {
     local dbname="$1"
     echo -e "\nCreate Table\n"
-    read -p "Please enter the name of the table: " table_name
+    read -r -p "Please enter the name of the table: " table_name
 
     table_name=$(echo "$table_name" | xargs)
 
