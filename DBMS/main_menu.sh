@@ -90,7 +90,6 @@ create_database() {
     fi
 }
 
-    #simple is it just list all the databases that exist in the directory 
 
 
 list_databases() {
@@ -101,12 +100,13 @@ list_databases() {
         echo -e "\nThere are no existing databases.\n"
         echo "Click 1 from the main menu to create a Database."
     fi
-}
+}    #simple is it just list all the databases that exist in the directory 
+
 
 
 connect_database() {
     echo -e "\nConnect to Database"
-    read -p "Enter database name: " dbname
+    read -r -p "Enter database name: " dbname
     if [ -d "$Database_Dir/$dbname" ]; then
         chmod 755 "$Database_Dir/$dbname"  # Set read, write, and execute permissions
         cd "$Database_Dir/$dbname" || exit
@@ -123,7 +123,7 @@ connect_database() {
 
 drop_database() {
     echo -e "\nDrop Database"
-    read -p "Enter database name: " dbname
+    read -r -p "Enter database name: " dbname
 
     if [ -z "$dbname" ]; then
         echo -e "\nDatabase name cannot be empty. Please enter a valid name."
@@ -233,57 +233,57 @@ createTable() {
 
     echo -e "\nEnter column details:\n"
     for ((index = 1; index <= colnumber; index++)); do
-        read -p "Column $index name: " colname
+        while true; do
+            read -p "Column $index name: " colname
+            colname=$(echo "$colname" | xargs)
 
-        colname=$(echo "$colname" | xargs)
+            if [ -z "$colname" ]; then
+                echo -e "\nColumn name cannot be empty."
+                continue
+            fi
 
-        if [ -z "$colname" ]; then
-            echo -e "\nColumn name cannot be empty."
-            ((index--))
-            continue
-        fi
+            if [[ "$colname" == *" "* ]]; then
+                echo -e "\nColumn name cannot contain spaces."
+                continue
+            fi
 
-        if [[ "$colname" == *" "* ]]; then
-            echo -e "\nColumn name cannot contain spaces."
-            ((index--))
-            continue
-        fi
+            if [[ "$colname" =~ [0-9] ]]; then
+                echo -e "\nColumn name cannot contain numbers."
+                continue
+            fi
 
-        if [[ "$colname" =~ [0-9] ]]; then
-            echo -e "\nColumn name cannot contain numbers."
-            ((index--))
-            continue
-        fi
+            if [[ "$colname" =~ [^a-zA-Z_] ]]; then
+                echo -e "\nColumn name can only contain letters and underscores."
+                continue
+            fi
 
-        if [[ "$colname" =~ [^a-zA-Z_] ]]; then
-            echo -e "\nColumn name can only contain letters and underscores."
-            ((index--))
-            continue
-        fi
+            if [[ "$colname" =~ ^[_-] || "$colname" =~ [_-]$ ]]; then
+                echo -e "\nColumn name cannot start or end with an underscore or hyphen."
+                continue
+            fi
 
-        if [[ "$colname" =~ ^[_-] || "$colname" =~ [_-]$ ]]; then
-            echo -e "\nColumn name cannot start or end with an underscore or hyphen."
-            ((index--))
-            continue
-        fi
+            if [[ "$colname" =~ __ ]]; then
+                echo -e "\nColumn name cannot contain consecutive underscores."
+                continue
+            fi
 
-        if [[ "$colname" =~ __ ]]; then
-            echo -e "\nColumn name cannot contain consecutive underscores."
-            ((index--))
-            continue
-        fi
+            if [[ ${#colname} -gt 30 ]]; then
+                echo -e "\nColumn name cannot be longer than 30 characters."
+                continue
+            fi
 
-        if [[ ${#colname} -gt 30 ]]; then
-            echo -e "\nColumn name cannot be longer than 30 characters."
-            ((index--))
-            continue
-        fi
+            if [[ "$colname" =~ ^($RESERVED_WORDS)$ ]]; then
+                echo -e "\nColumn name cannot be a reserved word."
+                continue
+            fi
 
-        if [[ "$colname" =~ ^($RESERVED_WORDS)$ ]]; then
-            echo -e "\nColumn name cannot be a reserved word."
-            ((index--))
-            continue
-        fi
+            if [[ " ${col_names[@]} " =~ " ${colname} " ]]; then
+                echo -e "\nColumn name '$colname' already exists. Please enter a unique name."
+                continue
+            fi
+
+            break
+        done
 
         read -p "Column $colname datatype (string/int): " coltype
 
@@ -397,12 +397,9 @@ dropTable() {
     fi
 } #this is for dropping tables
 
-
-
-
 insertIntoTable() {
     echo -e "\nInsert into Table\n"
-    read -p "Please enter the name of the table: " tableName
+    read -r -p "Please enter the name of the table: " tableName
 
     if ! [[ -f "$tableName" ]]; then
         echo "Table '$tableName' does not exist. Please choose another table."
@@ -422,7 +419,7 @@ insertIntoTable() {
         colKey=$(awk 'BEGIN{FS="|"}{if(NR=='$i') print $3}' "$tableName.meta")
 
         echo -e "$colName ($colType) = \c"
-        read data
+        read -r data
 
         # Validate Input
         if [[ $colType == "int" ]]; then
@@ -430,6 +427,12 @@ insertIntoTable() {
                 echo -e "Invalid datatype! Please enter an integer."
                 echo -e "$colName ($colType) = \c"
                 read data
+            done
+        elif [[ $colType == "string" ]]; then
+            while ! [[ $data =~ ^[a-zA-Z]+$ ]]; do
+                echo -e "Invalid datatype! String can only contain alphabetic characters. Please enter a valid string."
+                echo -e "$colName ($colType) = \c"
+                read -r data
             done
         fi
 
@@ -441,7 +444,7 @@ insertIntoTable() {
                     break
                 fi
                 echo -e "$colName ($colType) = \c"
-                read data
+                read -r data
             done
         fi
 
@@ -463,13 +466,10 @@ insertIntoTable() {
     fi
 }
 
-
-
-
 selectFromTable() {
     local dbname="$1"
     echo -e "\nSelect From Table\n"
-    read -p "Please enter the name of the table: " table_name
+    read -r -p "Please enter the name of the table: " table_name
 
     table_name=$(echo "$table_name" | xargs)
 
@@ -514,7 +514,7 @@ selectFromTable() {
             echo "----------------------------------------------------------------------------------------------------------------"
             ;;
         2)
-            read -p "Please enter the column name: " column_name
+            read -r -p "Please enter the column name: " column_name
 
             column_name=$(echo "$column_name" | xargs)
 
@@ -552,7 +552,7 @@ selectFromTable() {
 
 deleteFromTable() {
     echo -e "\nDelete From Table\n"
-    read -p "Enter the table name: " table_name
+    read -r -p "Enter the table name: " table_name
 
     if ! [[ -f "$table_name" ]]; then
         echo "Table '$table_name' does not exist. Please choose another table."
@@ -667,7 +667,7 @@ deleteFromTable() {
 
 updateTable() {
     echo -e "\nUpdate Table\n"
-    read -p "Please enter the name of the table: " table_name
+    read -r -p "Please enter the name of the table: " table_name
 
     if ! [[ -f "$table_name" ]]; then
         echo "Table '$table_name' does not exist."
@@ -694,7 +694,7 @@ updateTable() {
     echo -e "\nAre you sure you want to update the row with primary key '$pk_value'?"
     echo "For yes press 1"
     echo "For no press 2"
-    read -p "Enter your choice: " confirm
+    read -r -p "Enter your choice: " confirm
 
     if [ "$confirm" -eq 1 ]; then
         declare -a values
@@ -710,7 +710,7 @@ updateTable() {
             fi
 
             echo -e "$colName ($colType) = \c"
-            read new_value
+            read -r new_value
 
             if [[ $colType == "int" ]]; then
                 while ! [[ $new_value =~ ^[0-9]+$ ]]; do
